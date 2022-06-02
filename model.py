@@ -24,7 +24,7 @@ precision = []
 quantidade_remocoes_de_nos = 19
 total_epochs = 60 # mais ou menos depois de 40 estabiliza
 removal_percentage = 0.05
-variacoes_de_seed = 10
+variacoes_de_seed = 100
 # end hyperparameters
 
 test = True
@@ -48,7 +48,7 @@ def modelDriver():
    
     nodes_per_iteration = int(dataset.num_nodes() * removal_percentage)
     # variacao de tecnicas
-    for i in node_removal_options:
+    for i in []:
         
         g = CoraGraphDataset(verbose=False)[0]
         precision, nodeRemovals = trainModelInstance(g, nodes_per_iteration, i)
@@ -62,7 +62,7 @@ def modelDriver():
     ## Testar a heuristica aleatoria    
     seedPrecisions = []
     dataSeed = pd.DataFrame(columns=['Seed', 'Precisão'])
-    if False:
+    if True:
         for i in range(variacoes_de_seed):
         
             g = CoraGraphDataset(verbose=False)[0]

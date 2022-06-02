@@ -90,6 +90,7 @@ def remove_nodes(g, total, strategy=2.2, seed=-1 ):
        
         #reverse sort by degree
         sortIndexes = np.argsort(degreeArray)[::-1]
+        #pass reversed sort indexes to degree array
         sorted =  np.array(degreeArray)[sortIndexes]
         
         hist = pd.DataFrame(sorted[0:total])
@@ -99,25 +100,29 @@ def remove_nodes(g, total, strategy=2.2, seed=-1 ):
         print(y)
         
         # create histogram with x and y
-       
+        """
         plt.bar(x, y)
         plt.xlabel("Degree")
         plt.ylabel("Number of nodes")
         plt.title("Histogram of node degrees")
         plt.show()
-        
+        """
   
         
-        #nao adianta usar valores dos graus, preciso dos indices anyway
+        #cortar os indices para uso na remocao do DGL
+        #preciso duplicar pra nao dar erro de stride
         nodes = sortIndexes[0:total].copy()
         
         # necessario essa gambiarra para nao dar erro de contiguidade (stride)
         # ver um jeito mais elegante?
         #nodes = nodes - np.zeros_like(nodes)
-        nodes_removidos = g.in_degrees(torch.tensor(nodes)).numpy().tolist()
-        maiorGrau = max(nodes_removidos)
-        menorGrau = min(nodes_removidos)
+        
         if debug_prints: 
+            #garantir os removidos
+            nodes_removidos = g.in_degrees(torch.tensor(nodes)).numpy().tolist()
+            maiorGrau = max(nodes_removidos)
+            menorGrau = min(nodes_removidos)
+        
             print("Maiores graus no momento e nodes: ")
             #print(sorted.tolist()[0:50], sep='\t')
             print(nodes_removidos[0:50], sep='\t')
@@ -172,8 +177,7 @@ def remove_nodes(g, total, strategy=2.2, seed=-1 ):
         
         nData =  pd.DataFrame(g.ndata)
         print(nData)
-        idData = g.ndata['_ID']
-        print(idData)
+       
     except ValueError as e:
         print("Erro com o array de entrada")
         print(e)
