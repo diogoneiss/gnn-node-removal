@@ -1,6 +1,7 @@
 import math
 import random
 import secrets
+import time
 import numpy as np
 import torch
 import dgl
@@ -27,7 +28,7 @@ debug_histogram = False
 
 
 def remove_nodes(g, total, strategy=2.2, seed=-1 ):
- 
+    total = 2
     if seed != -1:
         np.random.seed(seed)
     else:
@@ -59,10 +60,10 @@ def remove_nodes(g, total, strategy=2.2, seed=-1 ):
         
         #so pra visualizacao
         sorted_indexes = np.argsort(degreeArray)[::-1]
-        sorted =  np.array(degreeArray)[sorted_indexes]
+        debug_sorted_degrees =  np.array(degreeArray)[sorted_indexes]
         
         if debug_prints:
-            print("Maiores graus no momento: ", sorted.tolist()[0:50])
+            print("Maiores graus no momento: ", debug_sorted_degrees.tolist()[0:50])
             print("Maiores probabilidades de remover: ", np.array(removal_probability[sorted_indexes[0:50]]))
        
         nodes = np.random.choice(nodes, total, p=removal_probability, replace=False)
@@ -74,10 +75,10 @@ def remove_nodes(g, total, strategy=2.2, seed=-1 ):
         
         #so pra visualizacao
         sorted_indexes = np.argsort(degreeArray)[::-1]
-        sorted =  np.array(degreeArray)[sorted_indexes]
+        debug_sorted_degrees =  np.array(degreeArray)[sorted_indexes]
         
         if debug_prints:
-            print("Maiores graus no momento: ", sorted.tolist()[0:50])
+            print("Maiores graus no momento: ", debug_sorted_degrees.tolist()[0:50])
             print("Maiores probabilidades de remover: ", np.array(removal_probability[sorted_indexes[0:50]]))
 
        
@@ -87,16 +88,37 @@ def remove_nodes(g, total, strategy=2.2, seed=-1 ):
     # versao de in degrees
     elif strategy == 3 or strategy == 3.1:
         degreeArray = g.in_degrees().numpy()
-       
-        #reverse sort by degree
-        sortIndexes = np.argsort(degreeArray)[::-1]
-        #pass reversed sort indexes to degree array
-        sorted =  np.array(degreeArray)[sortIndexes]
+        print("NEXT ITERATION_____________________________________")
+        print('Mean of degrees: ', degreeArray.sum()/len(degreeArray))
+        print("Size of degree array: ", len(degreeArray))
         
-        hist = pd.DataFrame(sorted[0:total])
-        hist.columns = ['degree']
-        y = hist.groupby("degree").size()
+
+       
+        
+        print("___")
+        #reverse sort by degree
+        
+        #sortIndexes = np.argsort(degreeArray)[::-1].copy()
+        #1st step: sort by degree	
+        #sortIndexes = np.argsort(degreeArray)[-total:].copy()
+        sortIndexes = np.argsort(degreeArray)[::-1].copy()
+        
+        
+        print("Sorted indexes: ", sortIndexes.tolist())
+        
+        #2nd step: get degree value info
+        debug_sorted_degrees =  np.array(degreeArray)[sortIndexes]
+        
+        
+
+        degreeDict = list(zip(sortIndexes, debug_sorted_degrees))[0:10]
+        print("DegreeDict: ", degreeDict)
+        
+        hist = pd.DataFrame(debug_sorted_degrees)
+        hist.columns = ['degree count']
+        y = hist.groupby("degree count").size()
         x = y.index
+        print("number of nodes to be removed in round: ", total)
         print(y)
         
         # create histogram with x and y
@@ -108,24 +130,25 @@ def remove_nodes(g, total, strategy=2.2, seed=-1 ):
         plt.show()
         """
   
-        
-        #cortar os indices para uso na remocao do DGL
-        #preciso duplicar pra nao dar erro de stride
+        #removed nodes
+        #for i in sortIndexes[0:total]:
+        #    print(f"[{i}: degree {g.in_degrees(i)}] ", end="")
+        #slice first total nodes
+        #nodes = sortIndexes[:total].copy()
+        #3rd step: add to nodes array to future removal
         nodes = sortIndexes[0:total].copy()
-        
-        # necessario essa gambiarra para nao dar erro de contiguidade (stride)
-        # ver um jeito mais elegante?
-        #nodes = nodes - np.zeros_like(nodes)
-        
+        print(nodes.tolist())
         if debug_prints: 
             #garantir os removidos
             nodes_removidos = g.in_degrees(torch.tensor(nodes)).numpy().tolist()
             maiorGrau = max(nodes_removidos)
             menorGrau = min(nodes_removidos)
         
-            print("Maiores graus no momento e nodes: ")
+            print("\nMaiores graus no momento e nodes: ")
             #print(sorted.tolist()[0:50], sep='\t')
-            print(nodes_removidos[0:50], sep='\t')
+            print(nodes_removidos[0:total], sep='\t')
+          
+            
             print(f"Maior grau removido: {maiorGrau}")
             print(f"Menor grau removido: {menorGrau}")
            # print("Em indices: ")
@@ -138,7 +161,7 @@ def remove_nodes(g, total, strategy=2.2, seed=-1 ):
        
         #reverse sort by degree
         sortIndexes = np.argsort(degreeArray)[::-1]
-        sorted =  np.array(degreeArray)[sortIndexes]
+        debug_sorted_degrees =  np.array(degreeArray)[sortIndexes]
         
         #nao adianta usar valores dos graus, preciso dos indices anyway
         nodes = sortIndexes[0:total] 
@@ -149,9 +172,9 @@ def remove_nodes(g, total, strategy=2.2, seed=-1 ):
         
         if debug_prints:
             print("Maiores graus no momento: ")
-            print(sorted.tolist()[0:50], sep='\t')
+            print(debug_sorted_degrees.tolist()[0:total], sep='\t')
             print("Em indices: ")
-            print(nodes.tolist()[0:50], sep='\t')
+            print(nodes.tolist()[0:total], sep='\t')
         
     
     #Aleatorio com peso
@@ -176,7 +199,7 @@ def remove_nodes(g, total, strategy=2.2, seed=-1 ):
         g.remove_nodes(torch.tensor(nodes, dtype=torch.int64), store_ids=True)
         
         nData =  pd.DataFrame(g.ndata)
-        print(nData)
+
        
     except ValueError as e:
         print("Erro com o array de entrada")
